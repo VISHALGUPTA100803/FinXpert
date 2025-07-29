@@ -1,9 +1,21 @@
-
-
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 const header = () => {
   return (
-    <div>header</div>
-  )
-}
+    <div>
+      <SignedOut>
+        <SignInButton />
+      </SignedOut>
+      <SignedIn>
+        <UserButton />
+      </SignedIn>
+    </div>
+  );
+};
 
-export default header
+export default header;

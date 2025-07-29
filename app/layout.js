@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
+import {ClerkProvider} from '@clerk/nextjs';
 
 const inter = Inter({ subsets: ["latin1"] });
 
@@ -11,6 +12,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
+    <ClerkProvider>
     <html lang="en">
       <body className={`${inter.className}`}>
         {/* <header> */}
@@ -25,5 +27,10 @@ export default function RootLayout({ children }) {
         </footer>
       </body>
     </html>
+    </ClerkProvider>
   );
 }
+
+// The page.js file defines the home page component (Home), which returns a <Button> component.
+// The Next.js framework automatically wraps page.js inside layout.js, passing the content of page.js (<Button variant="destructive">Hello world !</Button>) as the children prop of RootLayout.
+// In RootLayout, {children} is placed inside the <main> tag, which means the content from page.js gets rendered inside it.
