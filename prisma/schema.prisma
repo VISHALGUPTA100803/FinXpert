@@ -1,0 +1,255 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl      = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())  
+  clerkUserId   String    @unique // clerk user id
+  email         String    @unique
+  name          String? // ? optional means This column can be NULL in the DB
+  imageUrl      String?
+  transactions  Transaction[]
+  accounts      Account[]
+  budgets       Budget[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("users") // name of the table will be users 
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  name         String
+  type         AccountType
+  balance      Decimal       @default(0) // will ask inital balance while creating an account
+  isDefault    Boolean       @default(false)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+// userId String
+
+// This is just a column in the Account table.
+
+// It stores the foreign key that links the Account to a User.
+// user User @relation(...)
+
+// This defines the relationship between Account and User.
+
+// user User → Each Account is connected to one User.
+
+// fields: [userId] → Prisma should use the userId field in the Account table as the foreign key.
+
+// references: [id] → That userId refers to the id column of the User table.
+
+// onDelete: Cascade → If the User is deleted, all related Accounts are automatically deleted too.
+// fields: [userId]
+// → This is in the same model (Account).
+// It tells Prisma: "Use this column (userId in Account) to hold the foreign key value."
+// ✅ Always comes from the model you are currently defining.
+
+// references: [id]
+// → This comes from the related model (User).
+// It tells Prisma: "This foreign key points to the id column of the User model."
+// ✅ Always comes from the other model you’re linking to.
+
+// user User
+// → The relation field itself. The type (User) makes Prisma know the "other side" of the relation.
+// @@index([userId])
+// It tells Prisma (and your database) to create an index on the userId column in the Account table.
+
+// 🔎 What is an index?
+// An index is like a "shortcut" your database makes to quickly look up rows based on a column (or set of columns).
+
+// Without an index, the database has to scan the entire table row by row to find matches.
+
+// With an index, it can jump directly to the rows that match — much faster, especially if the table has thousands/millions of rows
+// Because in real apps you often run queries like:
+
+// const accounts = await prisma.account.findMany({
+//   where: { userId: "123" }
+// })
+
+
+// Here, Prisma will generate SQL like:
+
+// SELECT * FROM "Account" WHERE "userId" = '123';
+
+
+// If no index exists → DB checks every row one by one.
+
+// If index exists on userId → DB instantly finds all rows where userId = '123'
+//@@index([userId]) = make queries filtering by userId much faster.
+enum AccountType {
+  CURRENT
+  SAVINGS
+}
+
+model Transaction {
+  id                String            @id @default(uuid())
+  type             TransactionType
+  amount           Decimal
+  description      String?
+  date             DateTime
+  category         String           
+  receiptUrl       String?
+  isRecurring      Boolean           @default(false)
+  recurringInterval RecurringInterval? // Only used if isRecurring is true
+  nextRecurringDate DateTime?         // Next date for recurring transaction
+  lastProcessed    DateTime?         // Last time this recurring transaction was processed
+  status           TransactionStatus  @default(COMPLETED)
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId        String
+  account          Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([accountId])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum RecurringInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+
+model Budget {
+  id          String       @id @default(uuid())
+  amount      Decimal
+  lastAlertSent DateTime?  // Track when the last alert was sent
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@map("budgets")
+}
+// @id → This marks the field as the primary key of the table.
+// @default(uuid()) → This tells Prisma:
+//If you don’t provide a value for id when inserting a new record, Prisma will automatically generate a UUID (Universally Unique Identifier).
+// [] → means a one-to-many relationship (list/array of records from another table).
+// 1. What does Transaction[] mean?
+// transactions Transaction[]
+
+// This means: One User can have many Transactions.
+
+// It’s a one-to-many relation.
+
+// In SQL, this means the Transaction table will have a userId foreign key column.
+
+// No, the account table will not store the whole User model instance.
+// Relational databases don’t work like that. They only store values in columns, not entire objects.
+
+// Here’s what happens in your case:
+
+// Prisma Schema
+// model User {
+//   id       Int       @id @default(autoincrement())
+//   accounts Account[]
+// }
+
+// model Account {
+//   id      Int    @id @default(autoincrement())
+//   userId  Int
+//   user    User   @relation(fields: [userId], references: [id])
+  
+//   @@index([userId])
+// }
+
+// What it means in SQL (simplified)
+
+// User table:
+
+// id   | other columns...
+// ---- | ----------------
+//  1   | ...
+//  2   | ...
+//  3   | ...
+
+
+// Account table:
+
+// id   | userId
+// ---- | ------
+//  10  | 1
+//  11  | 1
+//  12  | 2
+
+// Key points:
+
+// Account.userId is just an integer column.
+
+// It stores the primary key value (id) of the User table.
+
+// Example: If userId = 1, it means this account belongs to the User whose id = 1.
+
+// user User @relation(...) is Prisma’s way of telling you:
+
+// "userId in the Account table references id in the User table."
+
+// @@index([userId]) creates a database index on the userId column.
+
+// This speeds up queries like find all accounts for userId = 1.
+
+// 👉 So the database does not copy the whole User object into Account.
+// It only stores the user’s ID (foreign key), and Prisma lets you traverse the relationship in code (account.user gives you the related User).
+// account.user means in Prisma.
+// What happens in Prisma Client
+
+// Prisma gives you a relation field (user) in the Account model.
+
+// This is not an actual column in the database—it’s a virtual field Prisma generates so you can easily navigate relations.
+
+// So when you write:
+
+// const account = await prisma.account.findFirst({
+//   include: { user: true }
+// });
+// console.log(account.user);
+
+
+// Prisma will see account.userId,
+
+// Then it will query the User table where User.id = account.userId,
+
+// And return the full User object.
+
+// Meaning of account.user
+
+// account.userId → raw foreign key (number).
+
+// account.user → Prisma relation field that lets you fetch the linked User record (object).
