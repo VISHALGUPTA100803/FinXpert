@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
-  }
+    },
+    "checkJs": false, // 👈 Disable full type-checking
+    "allowJs": true, // 👈 Still allow JS files
+    "moduleResolution": "node"
+  },
+  "exclude": ["node_modules"]
 }
