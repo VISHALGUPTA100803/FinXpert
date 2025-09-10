@@ -9,9 +9,11 @@ const serializeTransaction = (obj) => {
   if (obj.balance) {
     serialized.balance = obj.balance.toNumber();
   }
+  return serialized;
 };
 
 export async function createAccount(data) {
+  console.log("📡 createAccount called with data:", data);
   try {
     // checking user is in db  or not then only create acount data
     const { userId } = await auth();
@@ -54,10 +56,13 @@ export async function createAccount(data) {
         isDefault: shouldBeDefault,
       },
     });
+    console.log("🟡 Raw DB Account:", account);
 
     // next js does not support decimal value before returning account its balance should be again number
     const serializedAccount = serializeTransaction(account);
+    console.log("✅ DB Inserted Account:", serializedAccount);
     revalidatePath("/dashboard");
+
     return { success: true, data: serializedAccount };
   } catch (e) {
     throw new Error(e.message);

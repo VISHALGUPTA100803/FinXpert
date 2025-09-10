@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 // react-hook form manage forms
 // zod is validation for the form
 // hook form resolver connects react-hook and zod
@@ -26,6 +26,10 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "./ui/switch";
 import { Button } from "./ui/button";
+import useFetch from "@/hooks/use-fetch";
+import { createAccount } from "@/actions/dashboard";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 const CreateAccontDrawer = ({ children }) => {
   const [open, setOpen] = useState(false);
 
@@ -46,8 +50,30 @@ const CreateAccontDrawer = ({ children }) => {
     },
   });
 
+  const {
+    data: newAccount,
+    error,
+    fn: createAccountFn,
+    loading: createAccountLoading,
+  } = useFetch(createAccount);
+
+  useEffect(() => {
+    if (newAccount && !createAccountLoading) {
+      toast.success("Account created successfully");
+      reset();
+      setOpen(false);
+    }
+  }, [createAccountLoading, newAccount]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message || "Failed to create account");
+    }
+  }, [error]);
+
   const onSubmit = async (data) => {
-    console.log(data);
+     console.log("📝 Form Submitted with Data:", data);
+    await createAccountFn(data);
   };
 
   return (
@@ -154,8 +180,18 @@ const CreateAccontDrawer = ({ children }) => {
                   Cancel
                 </Button>
               </DrawerClose>
-              <Button type="submit" className="flex-1">
-                Create Account
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={createAccountLoading}
+              >
+                {createAccountLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </div>
           </form>
