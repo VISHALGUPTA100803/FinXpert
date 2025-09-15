@@ -2,8 +2,12 @@ import React from "react";
 import CreateAccontDrawer from "@/components/create-account-drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import { getUserAccounts } from "@/actions/dashboard";
+import AccountCard from "./_components/account-card";
 
-const DashboardPage = () => {
+async function DashboardPage() {
+  const accounts = await getUserAccounts();
+  //console.log(accounts);
   return (
     <div className="px-5">
       {/* Budget Progress  */}
@@ -20,14 +24,39 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         </CreateAccontDrawer>
+
+        {accounts.length > 0 &&
+          accounts?.map((account) => {
+            return <AccountCard key={account.id} account={account} />;
+          })}
+          {/* Evaluation rules: if the left side (accounts.length > 0) is truthy, the expression evaluates to the right side; if the left side is falsy, the whole expression returns the left side (which React ignores when rendering).
+
+In short: “only render the right side when the left side is true.”
+
+accounts?.map((account) => { ... })
+
+accounts?.map uses optional chaining: if accounts is null or undefined, .map won’t be called and the expression returns undefined.
+
+.map(...) iterates over every account in the array and returns a new array of whatever the callback returns (here, React elements).
+
+(account) => { return <AccountCard key={account.id} account={account} />; }
+
+Arrow function callback for .map. For each account object it:
+
+Creates an <AccountCard /> React element.
+
+Passes the account object as a prop: account={account}.
+
+Adds key={account.id} — very important: key is a React-only attribute used to uniquely identify list items for efficient re-rendering (reconciliation). Use a stable unique id (not the array index) when possible. */}
       </div>
     </div>
   );
-};
+}
 
 export default DashboardPage;
 
-{/* <Card>
+{
+  /* <Card>
 <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed">
 
 
@@ -59,4 +88,5 @@ h-full → makes it take up the full height of the parent card.
 
 pt-5 → adds padding-top = 1.25rem (20px).
 
-👉 This centers the plus icon + text in the middle of the card. */}
+👉 This centers the plus icon + text in the middle of the card. */
+}
