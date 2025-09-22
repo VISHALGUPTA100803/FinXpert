@@ -51,7 +51,7 @@ const TransactionTable = ({ transactions }) => {
     field: "date",
     direction: "desc",
   });
-  //console.log(selectedIds);
+  console.log(selectedIds);
   const filteredAndSortedTransactions = transactions;
 
   const handleSort = (field) => {
