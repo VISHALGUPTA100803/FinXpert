@@ -3,8 +3,8 @@
 import { db } from "@/lib/prisma";
 import { subDays } from "date-fns";
 
-const ACCOUNT_ID = "account-id";
-const USER_ID = "user-id";
+const ACCOUNT_ID = "a655ff0f-c2b3-4568-9e87-6e3878d9938e";
+const USER_ID = "29a8a484-2e8d-436b-bfc1-7ccf3aa6feba";
 
 // Categories with their typical amount ranges
 const CATEGORIES = {
@@ -107,3 +107,74 @@ export async function seedTransactions() {
     return { success: false, error: error.message };
   }
 }
+
+// await db.$transaction(async (tx) => {
+// await → wait for this async operation to finish.
+
+// db → your Prisma database client (imported from @/lib/prisma).
+
+// .$transaction(...) → Prisma method that runs multiple queries inside a single database transaction (all succeed or all fail).
+
+// (async (tx) => { ... }) → you pass an async callback.
+
+// tx is a special Prisma transaction client.
+
+// You use tx instead of db inside this block so all queries are part of the same transaction.
+
+// await tx.transaction.deleteMany({ where: { accountId: ACCOUNT_ID } });
+// await → wait for deletion to finish.
+
+// tx.transaction → refers to the transaction table (Prisma model).
+
+// .deleteMany(...) → delete multiple rows.
+
+// { where: { accountId: ACCOUNT_ID } } → condition: delete all rows where accountId matches the hardcoded account.
+
+// 👉 Effect: Clears all existing transactions for this account before inserting fresh ones.
+
+// await tx.transaction.createMany({ data: transactions });
+// await → wait for insert to finish.
+
+// tx.transaction → same transaction table.
+
+// .createMany(...) → insert multiple rows at once.
+
+// { data: transactions } → transactions is the array you built earlier (fake transactions for 91 days).
+
+// 👉 Effect: Bulk insert all generated transactions into the database.
+
+// await tx.account.update({
+//   where: { id: ACCOUNT_ID },
+//   data: { balance: totalBalance },
+// });
+// await → wait for update.
+
+// tx.account → refers to the account table.
+
+// .update({...}) → update a single row.
+
+// where: { id: ACCOUNT_ID } → find the account by ID.
+
+// data: { balance: totalBalance } → set its balance column to the running total we calculated earlier.
+
+// 👉 Effect: Updates the account’s balance so it matches the sum of all seeded transactions.
+
+// });
+// Closes the $transaction block.
+
+// At this point, all 3 queries (deleteMany, createMany, update) are treated as one atomic transaction:
+
+// If they all succeed → changes are committed.
+
+// If any fails → all are rolled back (nothing changes in DB).
+
+// ✅ Summary of what this block does
+// Starts a database transaction.
+
+// Deletes all old transactions for the given account.
+
+// Inserts the newly generated transactions.
+
+// Updates the account’s balance to reflect the new data.
+
+// Commits everything (or rolls back if something goes wrong).
