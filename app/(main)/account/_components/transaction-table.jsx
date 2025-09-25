@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -27,6 +27,8 @@ import {
   Search,
   Trash,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -48,6 +50,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useFetch from "@/hooks/use-fetch";
+import { bulkDeleteTransaction } from "@/actions/accounts";
+import { toast } from "sonner";
+import { BarLoader } from "react-spinners";
+
+const ITEMS_PER_PAGE = 10;
 
 const RECURRING_INTERVALS = {
   DAILY: "Daily",
@@ -59,6 +67,7 @@ const RECURRING_INTERVALS = {
 const TransactionTable = ({ transactions }) => {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState([]);
+  console.log(selectedIds);
   const [sortConfig, setSortConfig] = useState({
     field: "date",
     direction: "desc",
@@ -68,6 +77,9 @@ const TransactionTable = ({ transactions }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [recurringFilter, setRecurringFilter] = useState("");
+  const [deletedIdsForToast, setDeletedIdsForToast] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredAndSortedTransactions = useMemo(() => {
     let result = [...transactions];
@@ -93,13 +105,14 @@ const TransactionTable = ({ transactions }) => {
     }
     // Apply sorting
     result.sort((a, b) => {
-      let comparison=0;
+      let comparison = 0;
       switch (sortConfig.field) {
         case "date":
           comparison = new Date(a.date) - new Date(b.date);
           break;
         case "category":
           comparison = a.category.localeCompare(b.category);
+          break;
         case "amount":
           comparison = a.amount - b.amount;
           break;
@@ -110,6 +123,18 @@ const TransactionTable = ({ transactions }) => {
     });
     return result;
   }, [transactions, searchTerm, typeFilter, recurringFilter, sortConfig]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(
+    filteredAndSortedTransactions.length / ITEMS_PER_PAGE
+  );
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedTransactions.slice(
+      startIndex,
+      startIndex + ITEMS_PER_PAGE
+    );
+  }, [filteredAndSortedTransactions, currentPage]);
 
   const handleSort = (field) => {
     setSortConfig((current) => ({
@@ -129,12 +154,53 @@ const TransactionTable = ({ transactions }) => {
 
   const handleSelectAll = () => {
     setSelectedIds((current) =>
-      current.length === filteredAndSortedTransactions.length
+      current.length === paginatedTransactions.length
         ? []
-        : filteredAndSortedTransactions.map((t) => t.id)
+        : paginatedTransactions.map((t) => t.id)
     );
   };
-  const handleBulkDelete = () => {};
+
+  const {
+    data: deleted,
+    loading: deleteLoading,
+    fn: deleteFn,
+    error: deleteError,
+  } = useFetch(bulkDeleteTransaction);
+  // console.log(
+  //   "deleted data coming from usefetch hook which used bullkdeletetransactions",
+  //   deleted
+  // );s
+  const handleBulkDelete = async () => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selectedIds.length} transactions?`
+      )
+    ) {
+      return;
+    }
+    setDeletedIdsForToast(selectedIds); // only for toast
+    deleteFn(selectedIds);
+  };
+
+  useEffect(() => {
+    if (!deleteLoading && deleted && deletedIdsForToast.length > 0) {
+      toast.success(
+        deletedIdsForToast.length === 1
+          ? "Transaction deleted successfully"
+          : `${deletedIdsForToast.length} transactions deleted successfully`
+      );
+      setDeletedIdsForToast([]); // reset after showing toast
+
+      // Remove deleted IDs from selectedIds
+      setSelectedIds((current) =>
+        current.filter((id) => !deletedIdsForToast.includes(id))
+      );
+    }
+
+    if (!deleteLoading && deleteError) {
+      toast.error(deleteError.message || "Failed to delete transaction(s)");
+    }
+  }, [deleted, deleteLoading, deleteError, deletedIdsForToast]);
 
   const handleClearFilters = () => {
     setSearchTerm("");
@@ -143,9 +209,19 @@ const TransactionTable = ({ transactions }) => {
     setSelectedIds([]);
   };
 
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    setSelectedIds([]);
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters  */}
+
+      {deleteLoading && (
+        <BarLoader className="mt-4" width={"100%"} color="#9333ea" />
+      )}
+
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -208,7 +284,7 @@ const TransactionTable = ({ transactions }) => {
                 <Checkbox
                   onCheckedChange={handleSelectAll}
                   checked={
-                    selectedIds.length === filteredAndSortedTransactions.length
+                    selectedIds.length === paginatedTransactions.length
                       ? true
                       : selectedIds.length === 0
                       ? false
@@ -264,7 +340,7 @@ const TransactionTable = ({ transactions }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedTransactions === 0 ? (
+            {paginatedTransactions === 0 ? (
               <TableRow>
                 <TableCell
                   colspan={7}
@@ -274,7 +350,7 @@ const TransactionTable = ({ transactions }) => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAndSortedTransactions.map((transaction) => (
+              paginatedTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <Checkbox
@@ -353,7 +429,10 @@ const TransactionTable = ({ transactions }) => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
-                          //onClick={() => deleteFn([transaction.id])}
+                          onClick={async () => {
+                            setDeletedIdsForToast([transaction.id]);
+                            deleteFn([transaction.id]);
+                          }}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -366,6 +445,30 @@ const TransactionTable = ({ transactions }) => {
           </TableBody>
         </Table>
       </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -386,8 +489,8 @@ export default TransactionTable;
 
 // Second { background: "red" } → the actual JS object with CSS properties
 
-{
-  /* <DropdownMenuTrigger asChild>
+//{
+/* <DropdownMenuTrigger asChild>
   <Button variant="ghost" className="h-8 w-8 p-0">
     <MoreHorizontal className="h-4 w-4" />
   </Button>
@@ -399,4 +502,181 @@ The Button becomes the clickable trigger that opens the dropdown.
 Without asChild, you’d get an extra wrapper element and potentially invalid markup.
 
 👉 You only need asChild when you want your custom component (like Button, Link, or div) to be the trigger itself instead of wrapping it. */
-}
+//}
+
+//u ser clicks on this header.
+
+// That calls handleSort("amount").
+
+// 2️⃣ handleSort runs
+// const handleSort = (field) => {
+//   setSortConfig((current) => ({
+//     field,
+//     direction:
+//       current.field == field && current.direction === "asc" ? "desc" : "asc",
+//   }));
+// };
+
+// If you click a new column, it sets:
+
+// field = "amount"
+
+// direction = "asc" (default first time).
+
+// If you click the same column again:
+
+// It toggles direction (asc → desc → asc …).
+
+// 👉 Example:
+
+// Before click: sortConfig = { field: "date", direction: "desc" }
+
+// Click “Amount” → becomes { field: "amount", direction: "asc" }
+
+// 3️⃣ Component re-renders
+
+// Because sortConfig is state, React re-renders.
+// Now useMemo runs again:
+
+// const filteredAndSortedTransactions = useMemo(() => {
+//   let result = [...transactions];
+//   ...
+//   // Apply sorting
+//   result.sort((a, b) => { ... });
+//   return result;
+// }, [transactions, searchTerm, typeFilter, recurringFilter, sortConfig]);
+
+// Since sortConfig changed, this whole block recalculates.
+
+// Now we reach the .sort() part.
+
+// 4️⃣ Inside result.sort
+
+// Suppose transactions =
+
+// [
+//   { id: 1, date: "2025-09-20", amount: 50, category: "Food" },
+//   { id: 2, date: "2025-09-21", amount: 20, category: "Bills" },
+//   { id: 3, date: "2025-09-22", amount: 100, category: "Shopping" }
+// ]
+
+// And now:
+
+// sortConfig = { field: "amount", direction: "asc" }
+
+// Step-by-step sorting:
+// Call 1: Compare (a=50, b=20)
+// comparison = a.amount - b.amount;
+// comparison = 50 - 20 = 30;
+
+// Since direction = asc, return 30.
+// 👉 Positive → means a (50) should go after b (20).
+
+// Now order: [20, 50, 100].
+
+// Call 2: Compare (a=50, b=100)
+// comparison = 50 - 100 = -50;
+
+// Return -50.
+// 👉 Negative → a (50) stays before b (100).
+
+// Order remains: [20, 50, 100].
+
+// ✅ Final sorted array = [20, 50, 100].
+
+// Perfect 👌 let’s dry run descending sort in detail.
+// We’ll go step by step from the click to the final sorted array.
+
+// 🟢 Setup
+
+// Suppose we have these transactions:
+
+// transactions = [
+//   { id: 1, date: "2025-09-20", amount: 50, category: "Food" },
+//   { id: 2, date: "2025-09-21", amount: 20, category: "Bills" },
+//   { id: 3, date: "2025-09-22", amount: 100, category: "Shopping" }
+// ]
+
+// Current state before click:
+
+// sortConfig = { field: "amount", direction: "asc" }
+
+// 🟡 Step 1: User clicks “Amount” again
+
+// That calls:
+
+// handleSort("amount")
+
+// Inside handleSort
+// setSortConfig((current) => ({
+//   field,
+//   direction:
+//     current.field == field && current.direction === "asc" ? "desc" : "asc",
+// }));
+
+// current = { field: "amount", direction: "asc" }
+
+// field = "amount" (param from click)
+
+// Check condition:
+
+// current.field == field && current.direction === "asc"
+// → "amount" == "amount" && "asc" === "asc"
+// → true
+
+// So new state:
+
+// sortConfig = { field: "amount", direction: "desc" }
+
+// 🟡 Step 2: React re-renders, useMemo runs
+// result.sort((a, b) => { ... });
+
+// 🟡 Step 3: Inside result.sort
+
+// We now have:
+
+// sortConfig = { field: "amount", direction: "desc" }
+
+// First comparison: (a=50, b=20)
+// comparison = a.amount - b.amount;
+// comparison = 50 - 20 = 30;
+
+// At the end:
+
+// return sortConfig.direction === "asc" ? comparison : -comparison;
+
+// Since direction = "desc", we negate:
+
+// return -30;
+
+// 👉 Negative means a comes before b in descending order.
+// So 50 stays before 20.
+
+// Second comparison: (a=20, b=100)
+// comparison = 20 - 100 = -80;
+
+// Negated:
+
+// return 80;
+
+// 👉 Positive means a comes after b.
+// So 20 goes after 100.
+
+// Third comparison: (a=50, b=100)
+// comparison = 50 - 100 = -50;
+
+// Negated:
+
+// return 50;
+
+// 👉 Positive → 50 goes after 100.
+
+// 🟡 Step 4: Final order
+
+// [100, 50, 20]
+
+// ✅ Summary
+
+// Asc order (first click): [20, 50, 100]
+
+// Desc order (second click): [100, 50, 20]
