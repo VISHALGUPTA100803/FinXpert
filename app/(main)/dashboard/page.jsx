@@ -4,14 +4,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { getUserAccounts } from "@/actions/dashboard";
 import AccountCard from "./_components/account-card";
+import { getCurrentBudget } from "@/actions/budget";
+import BudgetProgress from "./_components/budget-progress";
 
 async function DashboardPage() {
   const accounts = await getUserAccounts();
   //console.log(accounts);
+  const defaultAccount = accounts.find((account) => account.isDefault);
+  let budgetData = null;
+  if (defaultAccount) {
+    budgetData = await getCurrentBudget(defaultAccount.id);
+  }
+  console.log("budgeted data ", budgetData);
   return (
-    <div className="px-5">
+    <div className="space-y-8">
       {/* Budget Progress  */}
-
+      {defaultAccount && (
+        <BudgetProgress
+          initialBudget={budgetData?.budget}
+          currentExpenses={budgetData?.currentExpenses || 0}
+        ></BudgetProgress>
+      )}
       {/* Overview  */}
 
       {/* Accounts Grid */}
@@ -29,7 +42,7 @@ async function DashboardPage() {
           accounts?.map((account) => {
             return <AccountCard key={account.id} account={account} />;
           })}
-          {/* Evaluation rules: if the left side (accounts.length > 0) is truthy, the expression evaluates to the right side; if the left side is falsy, the whole expression returns the left side (which React ignores when rendering).
+        {/* Evaluation rules: if the left side (accounts.length > 0) is truthy, the expression evaluates to the right side; if the left side is falsy, the whole expression returns the left side (which React ignores when rendering).
 
 In short: “only render the right side when the left side is true.”
 
