@@ -164,4 +164,44 @@ export async function updateBudgetAmount(amount) {
 
 // If expenses._sum.amount exists → convert it to a number.
 
-// Otherwise → return 0 (meaning no expenses recorded).
+// Otherwise → return 0 (meaning no expenses recorded). 
+
+// const budget = await db.budget.upsert({
+//   where: { userId: user.id },
+//   update: { amount: amount },
+//   create: {
+//     userId: user.id,
+//     amount: amount,
+//   },
+// });
+// 1️⃣ db.budget.upsert({...})
+// db = your Prisma client.
+
+// budget = Prisma model (defined in schema.prisma).
+
+// upsert = update if row exists, insert if not.
+
+// So this single query handles both update and create cases.
+
+// 2️⃣ where: { userId: user.id }
+// Prisma looks for an existing budget row where userId matches the logged-in user’s ID.
+
+// Since you defined userId in Budget model as @unique, there can only be one budget per user.
+
+// 3️⃣ update: { amount: amount }
+// If a row is found → update that row.
+
+// Only change the amount field to the new value passed in.
+
+// Example: If amount = 8000 → set budget.amount = 8000.
+
+// 4️⃣ create: { userId: user.id, amount: amount }
+// If no row is found → create a new budget row.
+
+// Fields to insert:
+
+// userId: user.id → connect budget to this user.
+
+// amount: amount → set the budget value.
+
+// Prisma auto-fills other fields (id, createdAt, updatedAt).
