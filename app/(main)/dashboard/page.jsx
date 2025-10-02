@@ -15,7 +15,7 @@ async function DashboardPage() {
   if (defaultAccount) {
     budgetData = await getCurrentBudget(defaultAccount.id);
   }
-  console.log("budgeted data ", budgetData);
+  //console.log("budgeted data ", budgetData);
   return (
     <div className="space-y-8">
       {/* Budget Progress  */}

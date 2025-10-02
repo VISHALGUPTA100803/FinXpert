@@ -1,7 +1,19 @@
+import { getUserAccounts } from "@/actions/dashboard";
 import React from "react";
+import AddTransactionForm from "../_components/transaction-form";
+import { defaultCategories } from "@/data/categories";
 
-const page = () => {
-  return <div>transaction create page</div>;
+const AddTransactionPage = async () => {
+  //console.log("default categories",defaultCategories);
+  const accounts = await getUserAccounts();
+  return (
+    <div className="max-w-3xl mx-auto px-5">
+      <div className="flex justify-center md:justify-normal mb-8">
+        <h1 className="text-5xl gradient gradient-title ">Add Transaction</h1>
+      </div>
+      <AddTransactionForm accounts={accounts} categories={defaultCategories} />
+    </div>
+  );
 };
 
-export default page;
+export default AddTransactionPage;

@@ -47,8 +47,17 @@ export async function seedTransactions() {
     const transactions = [];
     let totalBalance = 0;
 
-    for (let i = 90; i >= 0; i--) {
+    for (let i = 90; i >= -30; i--) {
       const date = subDays(new Date(), i);
+
+      // subDays(new Date(), -30)
+      // Internally, subDays does something like:
+      // javascriptdate - (-30) days = date + 30 days
+      // When i = 120: subDays(today, 120) = 120 days ago
+      // When i = 1: subDays(today, 1) = yesterday
+      // When i = 0: subDays(today, 0) = today
+      // When i = -1: subDays(today, -1) = tomorrow
+      // When i = -30: subDays(today, -30) = 30 days from now
 
       // Generate 1-3 transactions per day
       const transactionsPerDay = Math.floor(Math.random() * 3) + 1;

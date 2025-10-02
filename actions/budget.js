@@ -25,16 +25,25 @@ export async function getCurrentBudget(accountId) {
     const startOfMonth = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      1
+      1,
+      0,
+      0,
+      0,
+      0 // Set to start of day
     );
     const endOfMonth = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth() + 1,
-      0
+      0,
+      23,
+      59,
+      59,
+      999 // Set to end of day
     );
-
+    //console.log("Date range:", { startOfMonth, endOfMonth, accountId });
     const expenses = await db.transaction.aggregate({
       where: {
+        userId: user.id,
         type: "EXPENSE",
         date: {
           gte: startOfMonth,
@@ -47,6 +56,8 @@ export async function getCurrentBudget(accountId) {
       },
     });
 
+    //console.log("Expenses result:", expenses);
+
     return {
       budget: budget ? { ...budget, amount: budget.amount.toNumber() } : null,
       currentExpenses: expenses._sum.amount
@@ -55,7 +66,7 @@ export async function getCurrentBudget(accountId) {
     };
   } catch (e) {
     console.error("Error fetching budget:", e);
-    throw error;
+    throw e;
   }
 }
 
@@ -164,7 +175,7 @@ export async function updateBudgetAmount(amount) {
 
 // If expenses._sum.amount exists → convert it to a number.
 
-// Otherwise → return 0 (meaning no expenses recorded). 
+// Otherwise → return 0 (meaning no expenses recorded).
 
 // const budget = await db.budget.upsert({
 //   where: { userId: user.id },

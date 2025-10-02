@@ -54,6 +54,7 @@ import useFetch from "@/hooks/use-fetch";
 import { bulkDeleteTransaction } from "@/actions/accounts";
 import { toast } from "sonner";
 import { BarLoader } from "react-spinners";
+import { defaultCategories } from "@/data/categories";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -214,6 +215,11 @@ const TransactionTable = ({ transactions }) => {
     setSelectedIds([]);
   };
 
+  const getCategoryName = (categoryId) => {
+    const category = defaultCategories.find((cat) => cat.id === categoryId);
+    return category ? category.name : categoryId;
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters  */}
@@ -287,8 +293,8 @@ const TransactionTable = ({ transactions }) => {
                     selectedIds.length === paginatedTransactions.length
                       ? true
                       : selectedIds.length === 0
-                      ? false
-                      : "indeterminate"
+                        ? false
+                        : "indeterminate"
                   }
                 />
               </TableHead>
@@ -369,7 +375,7 @@ const TransactionTable = ({ transactions }) => {
                       }}
                       className="px-2 py-1 rounded text-white text-sm"
                     >
-                      {transaction.category}
+                      {getCategoryName(transaction.category)}
                     </span>
                   </TableCell>
                   <TableCell
