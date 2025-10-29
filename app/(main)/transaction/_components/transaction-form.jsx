@@ -21,12 +21,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import ReceiptScanner from "./receipt-scanner";
 const AddTransactionForm = ({ accounts, categories }) => {
   const {
     register,
@@ -62,6 +63,21 @@ const AddTransactionForm = ({ accounts, categories }) => {
     (category) => category.type === type
   );
 
+  const handleScanComplete = (scannedData) => {
+    //console.log(scannedData);
+    if (scannedData) {
+      setValue("amount", scannedData.amount.toString());
+      setValue("date", new Date(scannedData.date));
+      if (scannedData.description) {
+        setValue("description", scannedData.description);
+      }
+      if (scannedData.category) {
+        setValue("category", scannedData.category);
+      }
+      toast.success("Receipt scanned successfully");
+    }
+  };
+
   const router = useRouter();
 
   const onSubmit = async (data) => {
@@ -73,7 +89,10 @@ const AddTransactionForm = ({ accounts, categories }) => {
     transactionFn(formData);
   };
   useEffect(() => {
-    console.log('useEffect triggered:', { transactionResult, transactionLoading });
+    console.log("useEffect triggered:", {
+      transactionResult,
+      transactionLoading,
+    });
     if (transactionResult?.success && !transactionLoading) {
       toast.success("Transaction created successfully");
       reset();
@@ -83,6 +102,7 @@ const AddTransactionForm = ({ accounts, categories }) => {
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
       {/* AI Reciept Scanner */}
+      <ReceiptScanner onScanComplete={handleScanComplete} />
       <div className="space-y-2">
         <label className="text-sm font-medium"> Type</label>
         <Select
@@ -255,12 +275,17 @@ const AddTransactionForm = ({ accounts, categories }) => {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={() => router.back()} // it will go back to that page where it came from
+          onClick={() => router.back()}
         >
           Cancel
         </Button>
+
         <Button type="submit" disabled={transactionLoading} className="flex-1">
-          Create Transaction
+          {transactionLoading ? (
+            <Loader2 className="mr-2 animate-spin" />
+          ) : (
+            "Create Transaction"
+          )}
         </Button>
       </div>
     </form>
@@ -546,7 +571,6 @@ It lets you use your own button / icon / custom component as the popover trigger
 
 // <form onSubmit={handleSubmit(onSubmit)}>
 
-
 // What happens under the hood:
 
 // RHF intercepts the form submit event.
@@ -563,13 +587,11 @@ It lets you use your own button / icon / custom component as the popover trigger
 
 // <form onSubmit={(e) => onSubmit(e)}>
 
-
 // You’d have to prevent default, collect values manually, etc.
 
 // With RHF:
 
 // onSubmit={handleSubmit(onSubmit)}
-
 
 // RHF wraps your onSubmit in handleSubmit.
 
