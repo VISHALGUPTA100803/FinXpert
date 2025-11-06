@@ -1,6 +1,6 @@
 "use client";
 
-import { createTransaction } from "@/actions/transaction";
+import { createTransaction, updateTransaction } from "@/actions/transaction";
 import { transactionSchema } from "@/app/lib/schema";
 import useFetch from "@/hooks/use-fetch";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,10 +25,17 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import ReceiptScanner from "./receipt-scanner";
-const AddTransactionForm = ({ accounts, categories }) => {
+const AddTransactionForm = ({
+  accounts,
+  categories,
+  editMode = false,
+  initialData = null,
+}) => {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
   const {
     register,
     setValue,
@@ -39,21 +46,35 @@ const AddTransactionForm = ({ accounts, categories }) => {
     reset,
   } = useForm({
     resolver: zodResolver(transactionSchema),
-    defaultValues: {
-      type: "EXPENSE",
-      amount: "",
-      description: "",
-      accountId: accounts.find((ac) => ac.isDefault)?.id,
-      date: new Date(),
-      isRecurring: false,
-    },
+    defaultValues:
+      editMode && initialData
+        ? {
+            type: initialData.type,
+            amount: initialData.amount.toString(),
+            description: initialData.description,
+            accountId: initialData.accountId,
+            category: initialData.category,
+            date: new Date(initialData.date),
+            isRecurring: initialData.isRecurring,
+            ...(initialData.recurringInterval && {
+              recurringInterval: initialData.recurringInterval,
+            }),
+          }
+        : {
+            type: "EXPENSE",
+            amount: "",
+            description: "",
+            accountId: accounts.find((ac) => ac.isDefault)?.id,
+            date: new Date(),
+            isRecurring: false,
+          },
   });
 
   const {
     loading: transactionLoading,
     fn: transactionFn,
     data: transactionResult,
-  } = useFetch(createTransaction);
+  } = useFetch(editMode ? updateTransaction : createTransaction);
   console.log("transaction result from db", transactionResult);
   const type = watch("type");
   const isRecurring = watch("isRecurring");
@@ -86,7 +107,11 @@ const AddTransactionForm = ({ accounts, categories }) => {
       amount: parseFloat(data.amount),
     };
     console.log("from data which is sent", formData);
-    transactionFn(formData);
+    if (editMode) {
+      transactionFn(editId, formData);
+    } else {
+      transactionFn(formData);
+    }
   };
   useEffect(() => {
     console.log("useEffect triggered:", {
@@ -94,15 +119,19 @@ const AddTransactionForm = ({ accounts, categories }) => {
       transactionLoading,
     });
     if (transactionResult?.success && !transactionLoading) {
-      toast.success("Transaction created successfully");
+      toast.success(
+        editMode
+          ? "Transaction updated successfully"
+          : "Transaction created successfully"
+      );
       reset();
       router.push(`/account/${transactionResult.data.accountId}`);
     }
-  }, [transactionResult, transactionLoading]);
+  }, [transactionResult, transactionLoading, editMode]);
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
       {/* AI Reciept Scanner */}
-      <ReceiptScanner onScanComplete={handleScanComplete} />
+      {!editMode && <ReceiptScanner onScanComplete={handleScanComplete} />}
       <div className="space-y-2">
         <label className="text-sm font-medium"> Type</label>
         <Select
@@ -282,7 +311,12 @@ const AddTransactionForm = ({ accounts, categories }) => {
 
         <Button type="submit" disabled={transactionLoading} className="flex-1">
           {transactionLoading ? (
-            <Loader2 className="mr-2 animate-spin" />
+            <>
+              <Loader2 className="mr-2 animate-spin" />
+              {editMode ? "Updating..." : "Creating..."}
+            </>
+          ) : editMode ? (
+            "Update Transaction"
           ) : (
             "Create Transaction"
           )}
