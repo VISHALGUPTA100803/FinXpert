@@ -31,8 +31,8 @@ import ReceiptScanner from "./receipt-scanner";
 const AddTransactionForm = ({
   accounts,
   categories,
-  editMode = false,
-  initialData = null,
+  editMode = false, //  If not provided, use false
+  initialData = null, // If not provided, use null
 }) => {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
@@ -56,6 +56,7 @@ const AddTransactionForm = ({
             category: initialData.category,
             date: new Date(initialData.date),
             isRecurring: initialData.isRecurring,
+            //  Conditional Spread: Only add if recurringInterval exists
             ...(initialData.recurringInterval && {
               recurringInterval: initialData.recurringInterval,
             }),
