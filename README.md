@@ -1,8 +1,6 @@
 # 💰 FinXpert - AI-Powered Financial Management Platform
 
 <div align="center">
-  <img src="/public/logo_finxpert.png" alt="FinXpert Logo" width="300"/>
-  
   <p align="center">
     An intelligent financial management platform that leverages AI to monitor, evaluate, and enhance your spending habits with instant, real-time insights.
   </p>
