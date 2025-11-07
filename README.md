@@ -23,10 +23,10 @@ https://github.com/user-attachments/assets/9ab57b0c-1328-40fc-923b-8d7e92d27ad3
 - [Features](#-features)
 - [Key Features Deep Dive](#-key-features-deep-dive)
 - [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [Environment Variables](#-environment-variables)
 - [Database Schema](#-database-schema)
 - [API Routes](#-api-routes)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
 - [Project Structure](#-project-structure)
 - [Contributing](#-contributing)
 ---
@@ -242,6 +242,51 @@ All components are fully accessible and customizable via Tailwind CSS.
 
 ---
 
+---
+
+## 🗄 Database Schema
+
+### User
+- Clerk-based authentication
+- Links to accounts, transactions, and budgets
+
+### Account
+- Types: CURRENT, SAVINGS
+- Tracks balance in real-time
+- Can be set as default
+
+### Transaction
+- Types: INCOME, EXPENSE
+- Supports recurring transactions (DAILY, WEEKLY, MONTHLY, YEARLY)
+- Status tracking (PENDING, COMPLETED, FAILED)
+- Linked to accounts and users
+
+### Budget
+- Monthly budget limits
+- Alert tracking
+- One budget per user
+
+---
+
+## 🔌 API Routes
+
+### Internal API Routes
+- `/api/inngest` - Inngest webhook endpoint for background jobs
+- `/api/seed` - Development endpoint for seeding test data
+
+### Server Actions
+- `createAccount` - Create new account
+- `getUserAccounts` - Fetch user accounts
+- `updateDefaultAccount` - Set default account
+- `createTransaction` - Create new transaction
+- `updateTransaction` - Update existing transaction
+- `bulkDeleteTransaction` - Delete multiple transactions
+- `scanReceipt` - AI-powered receipt scanning
+- `getCurrentBudget` - Get budget data
+- `updateBudgetAmount` - Update budget
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -312,50 +357,7 @@ INNGEST_SIGNING_KEY=...
 ARCJET_KEY=...
 ```
 
----
 
-## 🗄 Database Schema
-
-### User
-- Clerk-based authentication
-- Links to accounts, transactions, and budgets
-
-### Account
-- Types: CURRENT, SAVINGS
-- Tracks balance in real-time
-- Can be set as default
-
-### Transaction
-- Types: INCOME, EXPENSE
-- Supports recurring transactions (DAILY, WEEKLY, MONTHLY, YEARLY)
-- Status tracking (PENDING, COMPLETED, FAILED)
-- Linked to accounts and users
-
-### Budget
-- Monthly budget limits
-- Alert tracking
-- One budget per user
-
----
-
-## 🔌 API Routes
-
-### Internal API Routes
-- `/api/inngest` - Inngest webhook endpoint for background jobs
-- `/api/seed` - Development endpoint for seeding test data
-
-### Server Actions
-- `createAccount` - Create new account
-- `getUserAccounts` - Fetch user accounts
-- `updateDefaultAccount` - Set default account
-- `createTransaction` - Create new transaction
-- `updateTransaction` - Update existing transaction
-- `bulkDeleteTransaction` - Delete multiple transactions
-- `scanReceipt` - AI-powered receipt scanning
-- `getCurrentBudget` - Get budget data
-- `updateBudgetAmount` - Update budget
-
----
 
 ## 📁 Project Structure
 ```
