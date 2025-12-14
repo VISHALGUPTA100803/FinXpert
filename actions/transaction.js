@@ -153,7 +153,7 @@ export async function scanReceipt(file) {
 
     // In @google/genai, use model.generateContent directly
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",

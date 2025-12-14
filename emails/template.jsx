@@ -9,9 +9,104 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
-
+// Dummy data for preview
+// const PREVIEW_DATA = {
+//   monthlyReport: {
+//     userName: "John Doe",
+//     type: "monthly-report",
+//     data: {
+//       month: "December",
+//       stats: {
+//         totalIncome: 5000,
+//         totalExpenses: 3500,
+//         byCategory: {
+//           housing: 1500,
+//           groceries: 600,
+//           transportation: 400,
+//           entertainment: 300,
+//           utilities: 700,
+//         },
+//       },
+//       insights: [
+//         "Your housing expenses are 43% of your total spending - consider reviewing your housing costs.",
+//         "Great job keeping entertainment expenses under control this month!",
+//         "Setting up automatic savings could help you save 20% more of your income.",
+//       ],
+//     },
+//   },
+//   budgetAlert: {
+//     userName: "John Doe",
+//     type: "budget-alert",
+//     data: {
+//       percentageUsed: 85,
+//       budgetAmount: 4000,
+//       totalExpenses: 3400,
+//     },
+//   },
+// };
 export default function EmailTemplate({ userName = "", type = "", data = {} }) {
   if (type === "monthly-report") {
+    return (
+      <Html>
+        <Head />
+        <Preview>Your Monthly Financial Report</Preview>
+        <Body style={styles.body}>
+          <Container style={styles.container}>
+            <Heading style={styles.title}>Monthly Financial Report</Heading>
+
+            <Text style={styles.text}>Hello {userName},</Text>
+            <Text style={styles.text}>
+              Here&rsquo;s your financial summary for {data?.month}:
+            </Text>
+
+            {/* Main Stats */}
+            <Section style={styles.statsContainer}>
+              <div style={styles.stat}>
+                <Text style={styles.text}>Total Income</Text>
+                <Text style={styles.heading}>${data?.stats.totalIncome}</Text>
+              </div>
+              <div style={styles.stat}>
+                <Text style={styles.text}>Total Expenses</Text>
+                <Text style={styles.heading}>${data?.stats.totalExpenses}</Text>
+              </div>
+              <div style={styles.stat}>
+                <Text style={styles.text}>Net</Text>
+                <Text style={styles.heading}>
+                  ${data?.stats.totalIncome - data?.stats.totalExpenses}
+                </Text>
+              </div>
+            </Section>
+
+            {/* Category Breakdown */}
+            {data?.stats?.byCategory && (
+              <Section style={styles.section}>
+                <Heading style={styles.heading}>Expenses by Category</Heading>
+                {Object.entries(data?.stats.byCategory).map(
+                  ([category, amount]) => (
+                    <div key={category} style={styles.row}>
+                      <Text style={styles.text}>{category}</Text>
+                      <Text style={styles.text}>${amount}</Text>
+                    </div>
+                  )
+                )}
+              </Section>
+            )}
+
+            {/* AI Insights */}
+            {data?.insights && (
+              <Section style={styles.section}>
+                <Heading style={styles.heading}>FinXpert Insights</Heading>
+                {data.insights.map((insight, index) => (
+                  <Text key={index} style={styles.text}>
+                    • {insight}
+                  </Text>
+                ))}
+              </Section>
+            )}
+          </Container>
+        </Body>
+      </Html>
+    );
   }
   if (type === "budget-alert") {
     return (
@@ -104,13 +199,5 @@ const styles = {
     justifyContent: "space-between",
     padding: "12px 0",
     borderBottom: "1px solid #e5e7eb",
-  },
-  footer: {
-    color: "#6b7280",
-    fontSize: "14px",
-    textAlign: "center",
-    marginTop: "32px",
-    paddingTop: "16px",
-    borderTop: "1px solid #e5e7eb",
   },
 };
